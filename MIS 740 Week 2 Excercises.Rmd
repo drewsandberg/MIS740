@@ -140,23 +140,27 @@ fviz_gap_stat(gap_stat)
 #perform k-means clustering with k = 4 clusters
 kmc <- kmeans(km, centers = 3, nstart = 25)
 
-#view results
-kmc
-
-#plot results of final k-means model
-fviz_cluster(kmc, data = km)
-
 #add cluster assigment to original data; drop first column
 km_final <- cbind(raw[,-1], cluster = kmc$cluster)
+```
 
-#view final data
-head(km_final)
+```{r}
+#view results
+kmc
+kmc$size
+kmc$totss
+```
 
-#find mean of each cluster
+```{r}
+#plot results of final k-means model
+fviz_cluster(kmc, data = km)
+```
+
+```{r}
+#find & print summary statistics of each cluster
 kmeans_results = as.data.frame(km_final) %>%
   group_by(cluster) %>%
-  summarize(across(.fns = list(mean = mean, sd = sd), .names = "{col}_{fn}"))
+  summarize(across(.fns = list(mean = mean, sd = sd, min = min, max = max), .names = "{col}_{fn}"))
 
 print(kmeans_results)
 ```
-
