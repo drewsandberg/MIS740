@@ -1,0 +1,165 @@
+---
+title: "Heirarchical Clustering - Statology Example"
+author: "Drew Sandberg"
+reference1: "https://www.statology.org/hierarchical-clustering-in-r"
+reference2: "https://www.statology.org/k-means-clustering-in-r"
+date: "1/24/2021"
+output: html_document
+---
+
+```{r}
+library(factoextra)
+library(cluster)
+library(tidyverse)
+```
+
+```{r}
+# load data; keep an original verstion to which we can append cluster names
+# create a df, which will be the working dataframe where we apply calcs.
+raw = read_csv("https://raw.githubusercontent.com/drewsandberg/NDSU-MIS-740/main/Wk1_Exercise1.csv")
+df = raw
+
+#remove rows with missing values
+df <- na.omit(df)
+
+#scale each variable to have a mean of 0 and sd of 1
+df <- scale(df)
+
+#set seed to make reproducible results
+set.seed(141)
+```
+
+```{r}
+#define linkage methods
+#--------------------------------------------------------------------------------------------------------
+#calculate agglomerative coefficient for each clustering linkage method
+#Complete linkage clustering:      Find the max distance between points belonging to two different clusters.
+#Single linkage clustering:        Find the minimum distance between points belonging to two different clusters.
+#Mean linkage clustering:          Find all pairwise distances between points belonging to two different 
+#                                  clusters and then calculate the average.
+#Centroid linkage clustering:      Find the centroid of each cluster and calculate the distance between the 
+#                                  centroids of two different clusters.
+#Ward’s minimum variance method:   Minimize the total 
+
+linkage_methods <- c( "average", "single", "complete", "ward")
+names(linkage_methods) <- c( "average", "single", "complete", "ward")
+
+# function to compute agglomerative coefficient
+# agnes command below is short for "agglomerative nesting", aka heirarchical clustering
+ac <- function(x) {
+  agnes(df, method = x)$ac
+}
+
+agglomerative_coef = sapply(linkage_methods, ac)
+print(agglomerative_coef)
+```
+
+```{r}
+#Typically, one would likely choose the method which with the largest coefficient value
+# as coefficients closer to 1 indicates a stronger selection
+
+# In this case, Ward's method would likely be a better choice, but the course work
+# Wishes students to us the Complete Link method
+clust <- agnes(df, method = "complete")
+
+#produce dendrogram
+#cex refers to the size of the labels on the X-axis
+#hang: The fraction of the plot height by which labels should hang below the rest of the plot. A negative value will cause the labels to hang down from 0.
+pltree(clust, cex = .7, hang = -1, main = "Dendrogram") 
+```
+
+```{r}
+#calculate gap statistic for each number of clusters (up to 10 clusters)
+#K.max is the maximum number of clusters to create
+#B is the number of Monte Carlo samples for bootstraping sampling.
+gap_stat <- clusGap(df, FUN = hcut, nstart = 25, K.max = 10, B = 50)
+
+#produce plot of clusters vs. gap statistic
+#From the plot we can see that the gap statistic is highest at k = n clusters. Thus, we’ll choose to group our observations into n distinct clusters
+#for this sample dataset from Professor Pengnate, the optimal grouping would be 1; however, the excerice intends to use 3.
+fviz_gap_stat(gap_stat)
+```
+
+```{r}
+#compute distance matrix
+d <- dist(df, method = "euclidean")
+
+#perform hierarchical clustering using complete method
+#Check hclust documentation for methods
+final_clust <- hclust(d, method = "complete" )
+
+#cut the dendrogram into 4 clusters
+groups <- cutree(final_clust, k=3)
+
+# Number of members in each cluster
+table(groups)
+
+#append cluster labels to original data
+final_data <- cbind(raw, cluster = groups)
+
+#display first six rows of final data
+head(final_data)
+
+#find mean values for each column by cluster
+#You might want to read up on "across" verb as it has powerful options
+#for including where clauses, running multiple functions (includes applying 
+#new column names to results of function)
+cluster_means = as.data.frame(final_data) %>%
+  group_by(cluster) %>%
+  summarize(across(.fns = list(mean = mean, sd = sd), .names = "{col}_{fn}"))
+
+print(cluster_means)
+```
+
+*k-Means clustering*
+```{r}
+#copy and prepare original dataset into new dataframe for k-Means cluster analysis
+km = raw %>%
+  na.omit() %>%
+  scale()
+```
+
+```{r}
+# Determine the optimal number of clusters by evaluating two graphs by...
+# Graphing the number of clusters vs. total within sum of squares
+# The optimal number would be where the "elbow" occurrs within the graph. This is
+# gives an indication of where the variance begins to level /wrt to x-axis.
+
+fviz_nbclust(km, kmeans, method = "wss")
+
+# Then, calculate gap statistic based on number of clusters and...
+gap_stat <- clusGap(df,FUN = kmeans,nstart = 25,K.max = 10,B = 50)
+
+# Plotting the number of clusters vs. gap statistic
+fviz_gap_stat(gap_stat)
+
+#Choose the optimal number of clusters based upon what these graphs suggest
+# Given the sample dataset from Prof. Pengnate, there is a bit of a discrepancy
+# For the purposes of the exercise, let's select 3.
+```
+
+
+```{r}
+#perform k-means clustering with k = 4 clusters
+kmc <- kmeans(km, centers = 3, nstart = 25)
+
+#view results
+kmc
+
+#plot results of final k-means model
+fviz_cluster(kmc, data = km)
+
+#add cluster assigment to original data; drop first column
+km_final <- cbind(raw[,-1], cluster = kmc$cluster)
+
+#view final data
+head(km_final)
+
+#find mean of each cluster
+kmeans_results = as.data.frame(km_final) %>%
+  group_by(cluster) %>%
+  summarize(across(.fns = list(mean = mean, sd = sd), .names = "{col}_{fn}"))
+
+print(kmeans_results)
+```
+
