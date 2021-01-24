@@ -1,0 +1,83 @@
+---
+title: "MIS 740 Week 1 Exercises"
+author: "Drew Sandberg"
+date: "1/16/2021"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(OutlierDetection)
+```
+
+*Download Iris dataset and generate scatter plot*
+```{r}
+df = datasets::iris
+
+ggplot(df, aes(x=Sepal.Length, y=Sepal.Width))+
+  geom_point() +
+  theme_classic() +
+  labs(title = "Scatter plot of iris dataset",
+       subtitle = "Drew Sandberg")
+```
+
+*Using k-nearest means approach (Euclidean distance), detect and plot "outliers"*
+```{r}
+#Subset iris dataset to only those columns needed for x & y axes.
+df.iris = df %>%
+  select(Sepal.Length, Sepal.Width)
+
+#Now, normalize the data before running K-nearest means
+df.iris = df.iris %>%
+  mutate(Sepal.Length = scale(Sepal.Length),
+         Sepal.Width = scale(Sepal.Width))
+
+#Now assume there is at least 10 outliers; defualt is .05 & row count
+outliers = OutlierDetection(df.iris, 
+                            k=10,
+                            cutoff = .95,
+                            rnames = TRUE)
+print(outliers)
+```
+
+
+```{r}
+#Now assume there is at least 10 outliers; defualt is .05 & row count
+outliers = OutlierDetection(df.iris, 
+                            k=10,
+                            cutoff = .95,
+                            rnames = TRUE,
+                            dense = TRUE, depth = FALSE, distance = FALSE, dispersion = FALSE)
+print(outliers)
+```
+
+Exercise 2: Pprincipal Component Analysis:
+- PCA only workd with numerical data in the interval or ratio scales; not factors or levels
+- PCA must be scaled/normalized or converted to a Z score
+```{r}
+cereal = read_csv(choose.files())
+cereal_sub = select(cereal, -c("name", "mfr", "type"))
+cereal_sub_norm = as.data.frame(cereal_sub %>%scale(center = TRUE, scale = TRUE))
+
+#Compute principal componenet analysis
+pca = prcomp(cereal_sub_norm)
+
+#View rotations (computed correlation values from each orthonganal vector)
+#Those original independent variables will have a coefficient value; those meeting a 
+#pre-determined cutoff score should be used as the primary contributors to the principal component
+#You can think of aliasing the Principal Component by understanding what the primary contributors are 
+#trying to indicate; e.g. fiber and rating are primary drivers in PC1; call PC1 "Fiber rating"... may not 
+#make sense at the moment, but that's where those with domain expertise will and should help you understand
+#how the implications -- which will lead to a better alias naming convention.
+print(pca$rotation)
+```
+
+Until now, I've assumed that each "PC" in a principal component analysis was a single variable -- meaning it was related to one of the original input variable. WHAT I learned today is that PC1, PC2, etc... are the linear combinations of all components... I don't have a good way to describe this, but it's the combination/amalgamation of all the variables into a single variable, where each Principal COmponent reflects a rotation of the data along an axis (or at least that's how I think of it today) and so the cumulative sum of the variance explained by PCs will explain more variance as each additional item is added.
+
+Professor Pengate spoke about "renaming" a principal component to a more recognizable name; to do this he took the to
+
+```{r}
+str(pca)
+```
+
