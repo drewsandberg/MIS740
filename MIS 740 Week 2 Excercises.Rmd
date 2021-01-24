@@ -1,5 +1,5 @@
 ---
-title: "Heirarchical Clustering - Statology Example"
+title: "Heirarchical & k-Means Clustering"
 author: "Drew Sandberg"
 reference1: "https://www.statology.org/hierarchical-clustering-in-r"
 reference2: "https://www.statology.org/k-means-clustering-in-r"
@@ -14,16 +14,13 @@ library(tidyverse)
 ```
 
 ```{r}
-# load data; keep an original verstion to which we can append cluster names
-# create a df, which will be the working dataframe where we apply calcs.
+# load data; keep an original verstion
 raw = read_csv("https://raw.githubusercontent.com/drewsandberg/NDSU-MIS-740/main/Wk1_Exercise1.csv")
-df = raw
 
-#remove rows with missing values
-df <- na.omit(df)
-
-#scale each variable to have a mean of 0 and sd of 1
-df <- scale(df)
+# create a df, which will be the working dataframe where we apply calcs. 
+df = raw %>%
+   na.omit() %>%
+   scale()
 
 #set seed to make reproducible results
 set.seed(141)
