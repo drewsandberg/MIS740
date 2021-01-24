@@ -6,6 +6,13 @@ reference2: "https://www.statology.org/k-means-clustering-in-r"
 date: "1/24/2021"
 output: html_document
 ---
+Assume rows of data is a customer; columns of data are attributes of the customer.
+Purpose: group customers so that customers’ attributes are similar within the group, but dissimilar to other groups of customers and their attributes.
+
+Clustering is an unsupervised learning method, but also requires knowing how many clusters to use. But, since we do not know before starting, we can use heirarchical clustering to estimate the likely correct number of clusters to use -- the "unsupervised learning" occurs as individual rows of data are aggregated into clusters.
+
+*Cautionary notes*
+--k-Means clustering is sensitive to extreme value (e.g. true outliers); one may need to address outliers prior to running k-Means.
 
 ```{r}
 library(factoextra)
